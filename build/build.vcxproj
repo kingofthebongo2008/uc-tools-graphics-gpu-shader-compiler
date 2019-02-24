@@ -47,20 +47,17 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-uc-backend-public|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\bin\win-$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\tmp\$(Platform)\$(ProjectName)\$(Configuration)\</IntDir>
-    <TargetName>uc-gpu-pipeline-compiler-dev</TargetName>
+    <TargetName>uc-gpu-shader-compiler-dev</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-uc-backend-public|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\bin\win-$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\tmp\$(Platform)\$(ProjectName)\$(Configuration)\</IntDir>
-    <TargetName>uc-gpu-pipeline-compiler-public</TargetName>
+    <TargetName>uc-gpu-shader-compiler-public</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -105,30 +102,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\resources\resources.rc" />
+    <ResourceCompile Include="..\resources\app.rc" />
   </ItemGroup>
+
   <ItemGroup>
-    <Text Include="..\resources\dx12_gpu_pso_mypso.cpp.txt" />
-    <Text Include="..\resources\dx12_gpu_pso_mypso.h.txt" />
-    <Text Include="..\resources\dx12_gpu_compute_pso_mypso.cpp.txt" />
-    <Text Include="..\resources\dx12_gpu_compute_pso_mypso.h.txt" />
-    <Text Include="..\resources\unique_creator_compute_pso_mypso.cpp.txt" />
-    <Text Include="..\resources\unique_creator_compute_pso_mypso.h.txt" />
-    <Text Include="..\resources\unique_creator_pso_mypso.cpp.txt" />
-    <Text Include="..\resources\unique_creator_pso_mypso.h.txt" />
+    <Image Include="../resources/app.ico" />
   </ItemGroup>
+
+
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="packages\boost.1.68.0.0\build\boost.targets" Condition="Exists('packages\boost.1.68.0.0\build\boost.targets')" />
-    <Import Project="packages\boost_program_options-vc141.1.68.0.0\build\boost_program_options-vc141.targets" Condition="Exists('packages\boost_program_options-vc141.1.68.0.0\build\boost_program_options-vc141.targets')" />
-  </ImportGroup>
   <Import Project="build_h.msbuild" />
   <Import Project="build_cpp.msbuild" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('packages\boost.1.68.0.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost.1.68.0.0\build\boost.targets'))" />
-    <Error Condition="!Exists('packages\boost_program_options-vc141.1.68.0.0\build\boost_program_options-vc141.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\boost_program_options-vc141.1.68.0.0\build\boost_program_options-vc141.targets'))" />
-  </Target>
 </Project>
