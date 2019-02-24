@@ -8,6 +8,8 @@
 #include <array>
 
 #include "resource.h"
+#include <d3dcompiler.h>
+#include <cxxopts.hpp>
 
 #pragma optimize("",off)
 #pragma once
@@ -117,14 +119,122 @@ namespace uc
     }
 }
 
-int32_t main(int32_t argc, const char* argv[])
-{
 
+int32_t main(int32_t argc, char** argv)
+{
     using namespace uc::build::tasks;
 
+    cxxopts::Options options("uc-gpu-shader-compiler", "command line options");
+
+    options.add_options()
+        ("file", "shader file to compile", cxxopts::value<std::string>())
+        ("backend", "backend for cpp files", cxxopts::value<std::string>())
+        ("main", "entry point for shader", cxxopts::value<std::string>())
+        ("type", "shader type", cxxopts::value<std::string>())
+        ("defines", "preprocessor definitions", cxxopts::value<std::vector<std::string>>())
+        ("includes", "preprocessor includes", cxxopts::value<std::vector<std::string>>())
+        ("cpp", "cpp file output", cxxopts::value<std::string>())
+        ("header", "cpp header output", cxxopts::value<std::string>())
+        ("help", "help");
+
+
     static auto r = cpp_generate_find_templates(shader_pipeline_stage::pixel, backend::UniqueCreatorDev);
-    
-    
+
+    auto result = options.parse(argc, argv);
+
+    std::vector<std::string> defines;
+    std::vector<std::string> includes;
+    std::string              file;
+    std::string              backend;
+    std::string              main;
+    std::string              type;
+    std::string              cpp;
+    std::string              header;
+    std::string              help;
+
+    if (result["defines"].count() > 0)
+    {
+        defines = result["defines"].as<std::vector<std::string>>();
+    }
+
+    if (result["includes"].count() > 0)
+    {
+        defines = result["includes"].as<std::vector<std::string>>();
+    }
+
+    if (result["file"].count() > 0)
+    {
+        file = result["file"].as<std::string>();
+    }
+
+    if (result["backend"].count() > 0)
+    {
+        backend = result["backend"].as<std::string>();
+    }
+
+    if (result["main"].count() > 0)
+    {
+        main = result["main"].as<std::string>();
+    }
+
+    if (result["type"].count() > 0)
+    {
+        type = result["type"].as<std::string>();
+    }
+
+    if (result["cpp"].count() > 0)
+    {
+        cpp = result["cpp"].as<std::string>();
+    }
+
+    if (result["header"].count() > 0)
+    {
+        header = result["header"].as<std::string>();
+    }
+
+    try
+    {
+        if (result["help"].count() > 0)
+        {
+            std::cout << options.help() << std::endl;
+            return 0;
+        }
+
+        if (file.empty())
+        {
+            throw std::exception("missing file");
+        }
+
+        if (type.empty())
+        {
+            throw std::exception("missing type");
+        }
+
+        if (cpp.empty())
+        {
+            throw std::exception("missing cpp");
+        }
+
+        if (header.empty())
+        {
+            throw std::exception("missing header");
+        }
+
+        if (backend.empty())
+        {
+            backend = "dev";
+        }
+
+        if (main.empty())
+        {
+            main = "main";
+        }
+    }
+    catch (const std::exception & e)
+    {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 
     return 0;
 }
