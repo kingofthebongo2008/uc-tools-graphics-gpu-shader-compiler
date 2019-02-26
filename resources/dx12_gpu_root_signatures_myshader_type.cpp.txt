@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "my_shader_type.h"
+#include <cstdint>
 
 namespace uc
 {
@@ -15,9 +16,11 @@ namespace uc
             {
                 namespace
                 {
-                    static
-                    #include "shader.hlsl.dxbc.h"
-                    ;
+                    static uint8_t g_main[] = {
+
+                    my_shader_type_blob
+                
+                   };
                 }
             }
 

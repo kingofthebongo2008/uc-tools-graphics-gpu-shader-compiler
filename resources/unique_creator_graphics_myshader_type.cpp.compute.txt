@@ -15,16 +15,18 @@ namespace UniqueCreator
             {
                 namespace
                 {
-                    static
-                    #include "shader.hlsl.dxbc.h"
-                    ;
+                    static uint8_t g_main[] = {
+
+                    my_shader_type_blob
+                
+                   };
                 }
             }
 
             my_shader_type::my_shader_type( )
-            {	
-                m_code		= 	my_shader_type_private::g_main;
-                m_code_size = 	sizeof(my_shader_type_private::g_main);
+            {   
+                m_code      =   my_shader_type_private::g_main;
+                m_code_size =   sizeof(my_shader_type_private::g_main);
             }
         }
     }
