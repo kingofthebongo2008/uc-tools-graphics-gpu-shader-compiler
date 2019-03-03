@@ -12,8 +12,6 @@ build_script:
 
     msbuild c:\projects\build\build.sln /p:Configuration="Release" /verbosity:quiet
 
-    msbuild c:\projects\build\build.sln /p:Configuration="Release-uc-backend-public" /verbosity:quiet
-
 before_package:
 - ps: >-
     $autopkgFile = "package.nuspec"
