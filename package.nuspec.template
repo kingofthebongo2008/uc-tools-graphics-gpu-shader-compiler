@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
-    <id>uc-tools-graphics-gpu-pipeline-compiler</id>
+    <id>uc-tools-graphics-gpu-shader-compiler</id>
     <version>@version</version>
     <title>uc-tools-graphics-gpu-pipeline-compilern library</title>
     <authors>Stefan Dyulgerov</authors>
