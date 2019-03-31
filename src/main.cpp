@@ -37,7 +37,8 @@ namespace uc
             enum backend : uint32_t
             {
                 UniqueCreatorDev = 0,
-                UniqueCreatorPublic = 1
+                UniqueCreatorPublic = 1,
+                UniqueCreatorCSharp = 2
             };
 
             namespace
@@ -117,6 +118,26 @@ namespace uc
                 backend_header[1] = &header_name_backend_public;
 
                 return std::tuple<std::string, std::string> (load_shader_resource( backend_cpp[backend]->operator[](index)), load_shader_resource(backend_header[backend]->operator[](index)));
+            }
+
+            std::string cs_generate_find_templates(uc::build::tasks::shader_pipeline_stage stage)
+            {
+                using namespace uc::build::tasks;
+
+                std::array< std::uint32_t, 7 > cs_name_backend;
+
+                cs_name_backend[shader_pipeline_stage::pixel] = unique_creator_graphics_myshader_cs_pixel_txt;
+                cs_name_backend[shader_pipeline_stage::vertex] = unique_creator_graphics_myshader_cs_vertex_txt;
+                cs_name_backend[shader_pipeline_stage::geometry] = unique_creator_graphics_myshader_cs_geometry_txt;
+
+                cs_name_backend[shader_pipeline_stage::hull] = unique_creator_graphics_myshader_cs_hull_txt;
+                cs_name_backend[shader_pipeline_stage::domain] = unique_creator_graphics_myshader_cs_domain_txt;
+                cs_name_backend[shader_pipeline_stage::compute] = unique_creator_graphics_myshader_cs_compute_txt;
+                cs_name_backend[shader_pipeline_stage::root_signature] = unique_creator_graphics_myshader_cs_root_signature_txt;
+
+                auto index = static_cast<uint32_t> (stage);
+
+                return load_shader_resource(cs_name_backend[index]);
             }
 
             static uc::build::tasks::shader_pipeline_stage to_pipeline_stage(const std::string& s)
@@ -361,14 +382,15 @@ int32_t main(int32_t argc, char** argv)
 
     options.add_options()
         ("file", "shader file to compile", cxxopts::value<std::string>())
-        ("backend", "backend for cpp files (dev,  )", cxxopts::value<std::string>())
+        ("backend", "backend for cpp files (dev, cs )", cxxopts::value<std::string>())
         ("main", "entry point for shader", cxxopts::value<std::string>())
         ("type", "shader type (pixel, vertex, geometry, hull, domain, compute, rootsignature", cxxopts::value<std::string>())
         ("defines", "preprocessor definitions", cxxopts::value<std::vector<std::string>>())
         ("includes", "preprocessor includes", cxxopts::value<std::vector<std::string>>())
         ("cpp", "cpp file output", cxxopts::value<std::string>())
         ("header", "cpp header output", cxxopts::value<std::string>())
-        ("type_name", "cpp type name", cxxopts::value<std::string>())
+        ("cs", "cs file output", cxxopts::value<std::string>())
+        ("type_name", "cpp or cs type name", cxxopts::value<std::string>())
         ("help", "help");
 
 
@@ -381,6 +403,7 @@ int32_t main(int32_t argc, char** argv)
     std::string              main;
     std::string              type;
     std::string              cpp;
+    std::string              cs;
     std::string              header;
     std::string              help;
     std::string              type_name;
@@ -425,6 +448,11 @@ int32_t main(int32_t argc, char** argv)
         cpp = result["cpp"].as<std::string>();
     }
 
+    if (result["cs"].count() > 0)
+    {
+        cs  = result["cs"].as<std::string>();
+    }
+
     if (result["header"].count() > 0)
     {
         header = result["header"].as<std::string>();
@@ -448,19 +476,30 @@ int32_t main(int32_t argc, char** argv)
             throw std::exception("missing type");
         }
 
-        if (cpp.empty())
-        {
-            throw std::exception("missing cpp");
-        }
-
-        if (header.empty())
-        {
-            throw std::exception("missing header");
-        }
-
         if (backend.empty())
         {
             backend = "dev";
+        }
+
+        if (backend == "dev")
+        {
+            if (header.empty())
+            {
+                throw std::exception("missing header");
+            }
+
+            if (cpp.empty())
+            {
+                throw std::exception("missing cpp");
+            }
+        }
+
+        if (backend == "cs")
+        {
+            if (cs.empty())
+            {
+                throw std::exception("missing cs");
+            }
         }
 
         if (main.empty())
@@ -514,24 +553,41 @@ int32_t main(int32_t argc, char** argv)
         
         if ( SUCCEEDED( hr) )
         {
-            auto encoded    = hex_encode(reinterpret_cast<uint8_t*>(code->GetBufferPointer()), static_cast<uint32_t>(code->GetBufferSize()));
-            auto code       = cpp_generate_find_templates(stage, backend::UniqueCreatorDev);
+            auto b = (backend == "dev") ? backend::UniqueCreatorDev : backend::UniqueCreatorCSharp;
 
-            auto&& cpp_file_name_header = std::get<1>(code);
-            auto&& cpp_file_name        = std::get<0>(code);
-            auto&& header1              = replace_string(cpp_file_name_header, "my_shader_type", type_name);
-            auto&& cpp_file             = replace_string(cpp_file_name, "my_shader_type_blob", std::move(encoded));
-            auto&& cpp_file1            = replace_string(cpp_file, "my_shader_type", type_name);
-            
-            
+            if (b == backend::UniqueCreatorDev)
             {
-                std::ofstream f(cpp);
-                f << cpp_file1;
+                auto encoded = hex_encode(reinterpret_cast<uint8_t*>(code->GetBufferPointer()), static_cast<uint32_t>(code->GetBufferSize()));
+                auto code = cpp_generate_find_templates(stage, backend::UniqueCreatorDev);
+
+                auto&& cpp_file_name_header = std::get<1>(code);
+                auto&& cpp_file_name = std::get<0>(code);
+                auto&& header1 = replace_string(cpp_file_name_header, "my_shader_type", type_name);
+                auto&& cpp_file = replace_string(cpp_file_name, "my_shader_type_blob", std::move(encoded));
+                auto&& cpp_file1 = replace_string(cpp_file, "my_shader_type", type_name);
+
+                {
+                    std::ofstream f(cpp);
+                    f << cpp_file1;
+                }
+
+                {
+                    std::ofstream f(header);
+                    f << header1;
+                }
             }
-
+            else
             {
-                std::ofstream f(header);
-                f << header1;
+                auto encoded = hex_encode(reinterpret_cast<uint8_t*>(code->GetBufferPointer()), static_cast<uint32_t>(code->GetBufferSize()));
+                auto code = cs_generate_find_templates(stage);
+
+                auto&& cs_file     = replace_string(code, "my_shader_type_blob", std::move(encoded));
+                auto&& cs_file1    = replace_string(cs_file, "my_shader_type", type_name);
+
+                {
+                    std::ofstream f(cs);
+                    f << cs_file1;
+                }
             }
         }
         else
