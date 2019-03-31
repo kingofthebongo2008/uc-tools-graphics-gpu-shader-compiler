@@ -1,0 +1,26 @@
+namespace UniqueCreator
+{
+    namespace Graphics
+    {
+        namespace Shaders
+        {
+            namespace my_shader_type
+            {
+                public sealed class Factory
+                {
+                    public static HullShaderByteCode Create()
+                    {
+                        var code = new HullShaderByteCode();
+                        var bytes = new byte[3]
+                        {
+                                my_shader_type_blob
+                        };
+                        code.Code = bytes;
+                        return code;
+                    }
+                }
+            }
+        }
+    }
+}
+

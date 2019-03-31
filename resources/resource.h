@@ -35,5 +35,14 @@
 #define unique_creator_graphics_root_signatures_myshader_type_h_txt         126
 #define unique_creator_graphics_root_signatures_myshader_type_cpp_txt       127
 
+#define unique_creator_graphics_myshader_cs_compute_txt                     128
+#define unique_creator_graphics_myshader_cs_domain_txt                      129
+#define unique_creator_graphics_myshader_cs_geometry_txt                    130    
+#define unique_creator_graphics_myshader_cs_hull_txt                        131
+#define unique_creator_graphics_myshader_cs_pixel_txt                       132
+#define unique_creator_graphics_myshader_cs_root_signature_txt              133
+#define unique_creator_graphics_myshader_cs_vertex_txt                      134
+
+
 
 #endif
