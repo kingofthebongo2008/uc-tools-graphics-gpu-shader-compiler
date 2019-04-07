@@ -11,7 +11,7 @@ namespace UniqueCreator
                     public static GeometryShaderByteCode Create()
                     {
                         var code = new GeometryShaderByteCode();
-                        var bytes = new byte[3]
+                        var bytes = new byte[]
                         {
                                 my_shader_type_blob
                         };

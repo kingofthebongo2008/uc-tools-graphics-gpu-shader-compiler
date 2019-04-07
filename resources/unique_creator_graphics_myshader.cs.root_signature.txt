@@ -11,7 +11,7 @@ namespace UniqueCreator
                     public static RootSignatureByteCode Create()
                     {
                         var code = new RootSignatureByteCode();
-                        var bytes = new byte[3]
+                        var bytes = new byte[]
                         {
                                 my_shader_type_blob
                         };

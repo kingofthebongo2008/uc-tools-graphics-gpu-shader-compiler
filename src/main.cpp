@@ -509,7 +509,7 @@ int32_t main(int32_t argc, char** argv)
 
         if (type_name.empty())
         {
-            type_name = "my_shader_type";
+			throw std::exception("missing type_name");
         }
 
         shader_pipeline_stage stage = to_pipeline_stage(type);
