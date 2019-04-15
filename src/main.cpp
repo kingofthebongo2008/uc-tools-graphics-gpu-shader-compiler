@@ -211,7 +211,7 @@ namespace uc
 
                     case shader_pipeline_stage::root_signature:
                     {
-                        return std::string("rootsig_1_1");
+                        return std::string("rootsig_1_0");
                     }
 
                     default:
@@ -509,7 +509,7 @@ int32_t main(int32_t argc, char** argv)
 
         if (type_name.empty())
         {
-			throw std::exception("missing type_name");
+            throw std::exception("missing type_name");
         }
 
         shader_pipeline_stage stage = to_pipeline_stage(type);
