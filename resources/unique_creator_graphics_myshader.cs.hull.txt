@@ -2,21 +2,24 @@ namespace UniqueCreator
 {
     namespace Graphics
     {
-        namespace Shaders
+        namespace Gpu
         {
-            namespace my_shader_type
+            namespace Shaders
             {
-                public sealed class Factory
+                namespace my_shader_type
                 {
-                    public static HullShaderByteCode Create()
+                    public sealed class Factory
                     {
-                        var code = new HullShaderByteCode();
-                        var bytes = new byte[]
+                        public static HullShaderByteCode Create()
                         {
-                                my_shader_type_blob
-                        };
-                        code.Code = bytes;
-                        return code;
+                            var code = new HullShaderByteCode();
+                            var bytes = new byte[]
+                            {
+                                    my_shader_type_blob
+                            };
+                            code.Code = bytes;
+                            return code;
+                        }
                     }
                 }
             }
