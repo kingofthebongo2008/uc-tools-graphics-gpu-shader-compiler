@@ -592,8 +592,25 @@ int32_t main(int32_t argc, char** argv)
         }
         else
         {
+			if (hr == 0x80070002)
+			{
+				std::wcerr << L"File not found " << filew.c_str()<< '\n';
+			}
+			else
+			if (errors && errors->GetBufferSize() > 0)
+			{
+				std::cerr << (const char*)errors->GetBufferPointer() << '\n';
+			}
+			else
+			{
+				std::cerr << "Unknown error" << '\n';
+			}
 
-
+			if (code)
+			{
+				code->Release();
+			}
+			return 1;
         }
 
         if (code)
@@ -607,9 +624,11 @@ int32_t main(int32_t argc, char** argv)
             e.resize(errors->GetBufferSize());
             std::memcpy(&e[0], errors->GetBufferPointer(), errors->GetBufferSize());
             errors->Release();
-            std::cout << e << std::endl;
+            std::cerr << e << std::endl;
             return 1;
         }
+
+		return 0;
     }
 
     catch (const std::exception & e)
