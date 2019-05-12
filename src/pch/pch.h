@@ -12,5 +12,7 @@
 
 #include "targetver.h"
 
+#include <winrt/base.h>
+
 
 

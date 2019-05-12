@@ -11,11 +11,12 @@
 #include <d3dcompiler.h>
 #include <cxxopts.hpp>
 #include <fstream>
+#include <experimental/filesystem>
 
 #include <uc/util/utf8_conv.h>
 
-#pragma optimize("",off)
-#pragma once
+//#pragma optimize("",off)
+//#pragma once
 
 namespace uc
 {
@@ -374,6 +375,172 @@ namespace uc
     }
 }
 
+
+
+namespace
+{
+	std::vector<uint8_t> read_contents_file(const std::wstring& filename)
+	{
+		std::ifstream       file(filename, std::ios::binary);
+		
+		if (file)
+		{
+			/*
+			 * Get the size of the file
+			 */
+			file.seekg(0, std::ios::end);
+			std::streampos          length = file.tellg();
+			file.seekg(0, std::ios::beg);
+
+			/*
+			 * Use a vector as the buffer.
+			 * It is exception safe and will be tidied up correctly.
+			 * This constructor creates a buffer of the correct length.
+			 * Because char is a POD data type it is not initialized.
+			 *
+			 * Then read the whole file into the buffer.
+			 */
+			std::vector<uint8_t>       buffer(length);
+			file.read(reinterpret_cast<char*>(&buffer[0]), length);
+			return buffer;
+		}
+		else
+		{
+			return std::vector<uint8_t>();
+		}
+	}
+
+	std::tuple<uint8_t*, size_t >  read_contents_file2(const std::wstring& filename)
+	{
+		std::ifstream       file(filename, std::ios::binary);
+
+		if (file)
+		{
+			/*
+			 * Get the size of the file
+			 */
+			file.seekg(0, std::ios::end);
+			std::streampos          length = file.tellg();
+			file.seekg(0, std::ios::beg);
+
+			/*
+			 * Use a vector as the buffer.
+			 * It is exception safe and will be tidied up correctly.
+			 * This constructor creates a buffer of the correct length.
+			 * Because char is a POD data type it is not initialized.
+			 *
+			 * Then read the whole file into the buffer.
+			 */
+
+			std::unique_ptr<uint8_t[]> buffer(new uint8_t[length]);
+			file.read(reinterpret_cast<char*>(&buffer[0]), length);
+
+			if (file.good())
+			{
+				return std::make_tuple(buffer.release(), length);
+			}
+			else
+			{
+				return std::make_tuple(nullptr, 0);
+			}
+		}
+		else
+		{
+			return std::make_tuple(nullptr, 0);
+		}
+	}
+
+	std::vector < std::experimental::filesystem::path > make_system_paths(const std::vector<std::string>& paths)
+	{
+		namespace fs = std::experimental::filesystem;
+
+		std::vector < fs::path > p;
+
+		for (auto i : paths)
+		{
+			fs::path p0(i);
+			p.push_back(fs::absolute(p0));
+		}
+
+		return p;
+	}
+
+	class IncludePreprocessor : public ID3DInclude
+	{
+		std::vector< std::experimental::filesystem::path > m_system_includes;
+		std::experimental::filesystem::path				   m_local_dir;
+
+		bool handle_contents(const std::experimental::filesystem::path& p, LPCVOID* ppData, UINT* pBytes )
+		{
+			auto contents = read_contents_file2(p.c_str());
+
+			if (std::get<0>(contents))
+			{
+				*ppData = std::get<0>(contents);
+				*pBytes = static_cast<UINT>(std::get<1>(contents));
+				return true;
+			}
+			else
+			{
+				*ppData = nullptr;
+				*pBytes = 0;
+
+				return false;
+			}
+		}
+
+		public:
+
+		IncludePreprocessor(std::vector< std::experimental::filesystem::path >&& si, std::experimental::filesystem::path&& ld) : m_system_includes(std::move(si)), m_local_dir(std::move(ld))
+		{
+
+		}
+
+		STDMETHOD(Open)(THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes)
+		{
+			namespace fs = std::experimental::filesystem;
+			if (IncludeType == D3D_INCLUDE_LOCAL)
+			{
+				auto p = m_local_dir;
+				p.append(fs::path(pFileName));
+				return handle_contents(p, ppData, pBytes) ? S_OK : E_FAIL;
+			}
+			else if (IncludeType == D3D_INCLUDE_SYSTEM)
+			{
+				//probe system dirs
+				for (auto i : m_system_includes)
+				{
+					auto p = i.append(fs::path(pFileName));
+
+					if (handle_contents(p, ppData, pBytes))
+					{
+						return S_OK;
+					}
+				}
+
+				//probe the local dir
+				auto p = m_local_dir;
+				p.append(fs::path(pFileName));
+				return handle_contents(p, ppData, pBytes) ? S_OK : E_FAIL;
+			}
+			else
+			{
+				return E_FAIL;
+			}
+		}
+
+		STDMETHOD(Close)(THIS_ LPCVOID pData)
+		{
+			if (pData)
+			{
+				delete[] pData;
+			}
+			return S_OK;
+		}
+	};
+}
+
+
 int32_t main(int32_t argc, char** argv)
 {
     using namespace uc::build::tasks;
@@ -415,7 +582,7 @@ int32_t main(int32_t argc, char** argv)
 
     if (result["includes"].count() > 0)
     {
-        defines = result["includes"].as<std::vector<std::string>>();
+        includes = result["includes"].as<std::vector<std::string>>();
     }
 
     if (result["file"].count() > 0)
@@ -533,22 +700,47 @@ int32_t main(int32_t argc, char** argv)
         d3d_macros[macros.size()].Definition = nullptr;
 
 
-        ID3DBlob* code = nullptr;
-        ID3DBlob* errors = nullptr;
+        winrt::com_ptr<ID3DBlob> code;
+		winrt::com_ptr<ID3DBlob> errors;
 
         std::wstring filew  = uc::util::utf16_from_utf8(file);
         std::string  target = stage_to_command_line2(stage);
 
-        HRESULT hr = D3DCompileFromFile(
-            filew.c_str(),
-            &d3d_macros[0],
-            D3D_COMPILE_STANDARD_FILE_INCLUDE,
-            main.c_str(),
-            target.c_str(),
-            D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3,
-            0,
-            &code,
-            &errors
+		//Preprocess to force filetracker to put the dependencies
+		{
+			auto contents	  = read_contents_file(filew);
+			if (!contents.empty())
+			{
+				namespace fs = std::experimental::filesystem;
+				auto include = std::make_unique<IncludePreprocessor>(make_system_paths(includes), fs::absolute(fs::path(file).parent_path()));
+				HRESULT hr2 = D3DPreprocess(&contents[0], contents.size(), file.c_str(), &d3d_macros[0], include.get(), code.put(), errors.put());
+
+				if (hr2 != S_OK)
+				{
+					std::string e;
+					e.resize(errors->GetBufferSize());
+					std::memcpy(&e[0], errors->GetBufferPointer(), errors->GetBufferSize());
+					std::cerr << e << std::endl;
+					std::cout << e << std::endl;
+					errors = nullptr;
+					return 1;
+				}
+
+				errors = winrt::com_ptr<ID3DBlob>();
+				code   = winrt::com_ptr<ID3DBlob>();
+			}
+		}
+
+		HRESULT hr = D3DCompileFromFile(
+			filew.c_str(),
+			&d3d_macros[0],
+			D3D_COMPILE_STANDARD_FILE_INCLUDE,
+			main.c_str(),
+			target.c_str(),
+			D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3,
+			0,
+			code.put(),
+            errors.put()
         );
         
         if ( SUCCEEDED( hr) )
@@ -606,16 +798,7 @@ int32_t main(int32_t argc, char** argv)
 				std::cerr << "Unknown error" << '\n';
 			}
 
-			if (code)
-			{
-				code->Release();
-			}
 			return 1;
-        }
-
-        if (code)
-        {
-            code->Release();
         }
 
         if (errors)
@@ -623,7 +806,6 @@ int32_t main(int32_t argc, char** argv)
             std::string e;
             e.resize(errors->GetBufferSize());
             std::memcpy(&e[0], errors->GetBufferPointer(), errors->GetBufferSize());
-            errors->Release();
             std::cerr << e << std::endl;
             return 1;
         }
