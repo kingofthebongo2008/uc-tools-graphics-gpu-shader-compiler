@@ -11,7 +11,7 @@
 #include <d3dcompiler.h>
 #include <cxxopts.hpp>
 #include <fstream>
-#include <experimental/filesystem>
+#include <filesystem>
 
 #include <uc/util/utf8_conv.h>
 
@@ -450,9 +450,9 @@ namespace
 		}
 	}
 
-	std::vector < std::experimental::filesystem::path > make_system_paths(const std::vector<std::string>& paths)
+	std::vector < std::filesystem::path > make_system_paths(const std::vector<std::string>& paths)
 	{
-		namespace fs = std::experimental::filesystem;
+		namespace fs = std::filesystem;
 
 		std::vector < fs::path > p;
 
@@ -467,10 +467,10 @@ namespace
 
 	class IncludePreprocessor : public ID3DInclude
 	{
-		std::vector< std::experimental::filesystem::path > m_system_includes;
-		std::experimental::filesystem::path				   m_local_dir;
+		std::vector< std::filesystem::path > m_system_includes;
+		std::filesystem::path				   m_local_dir;
 
-		bool handle_contents(const std::experimental::filesystem::path& p, LPCVOID* ppData, UINT* pBytes )
+		bool handle_contents(const std::filesystem::path& p, LPCVOID* ppData, UINT* pBytes )
 		{
 			auto contents = read_contents_file2(p.c_str());
 
@@ -491,18 +491,18 @@ namespace
 
 		public:
 
-		IncludePreprocessor(std::vector< std::experimental::filesystem::path >&& si, std::experimental::filesystem::path&& ld) : m_system_includes(std::move(si)), m_local_dir(std::move(ld))
+		IncludePreprocessor(std::vector< std::filesystem::path >&& si, std::filesystem::path&& ld) : m_system_includes(std::move(si)), m_local_dir(std::move(ld))
 		{
 
 		}
 
 		STDMETHOD(Open)(THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes)
 		{
-			namespace fs = std::experimental::filesystem;
+			namespace fs = std::filesystem;
 			if (IncludeType == D3D_INCLUDE_LOCAL)
 			{
 				auto p = m_local_dir;
-				p.append(fs::path(pFileName));
+				p.append(pFileName);
 				return handle_contents(p, ppData, pBytes) ? S_OK : E_FAIL;
 			}
 			else if (IncludeType == D3D_INCLUDE_SYSTEM)
@@ -510,7 +510,7 @@ namespace
 				//probe system dirs
 				for (auto i : m_system_includes)
 				{
-					auto p = i.append(fs::path(pFileName));
+					auto p = i.append(pFileName);
 
 					if (handle_contents(p, ppData, pBytes))
 					{
@@ -520,7 +520,7 @@ namespace
 
 				//probe the local dir
 				auto p = m_local_dir;
-				p.append(fs::path(pFileName));
+				p.append(pFileName);
 				return handle_contents(p, ppData, pBytes) ? S_OK : E_FAIL;
 			}
 			else
@@ -711,7 +711,7 @@ int32_t main(int32_t argc, char** argv)
 			auto contents	  = read_contents_file(filew);
 			if (!contents.empty())
 			{
-				namespace fs = std::experimental::filesystem;
+				namespace fs = std::filesystem;
 				auto include = std::make_unique<IncludePreprocessor>(make_system_paths(includes), fs::absolute(fs::path(file).parent_path()));
 				HRESULT hr2 = D3DPreprocess(&contents[0], contents.size(), file.c_str(), &d3d_macros[0], include.get(), code.put(), errors.put());
 
